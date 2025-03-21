@@ -102,6 +102,13 @@ const complaintSchema = new mongoose.Schema({
   image: {
     type: String,
     required: false
+  },
+  location: {
+    type: {
+      locationLink: String,  // Store direct Google Maps link
+      address: String
+    },
+    required: false
   }
 }, { timestamps: true });
 
@@ -243,7 +250,11 @@ app.post('/complaints', async (req, res) => {
         status: 'Pending',
         timestamp: currentTime,
         comment: 'Complaint submitted'
-      }]
+      }],
+      location: req.body.location ? {
+        locationLink: `https://www.google.com/maps?q=${req.body.location.latitude},${req.body.location.longitude}`,
+        address: req.body.location.address
+      } : null
     };
 
     // Add image if provided

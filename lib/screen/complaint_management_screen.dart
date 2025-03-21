@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+//import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ComplaintManagementScreen extends StatefulWidget {
   const ComplaintManagementScreen({super.key});
@@ -407,6 +409,31 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
                           child: Text('Failed to load image'),
                         );
                       },
+                    ),
+                  ),
+                ],
+                if (complaint['location'] != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Location: ${complaint['location']['address'] ?? 'Location provided'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.location_on),
+                    label: const Text('View Location'),
+                    onPressed: () async {
+                      final url = complaint['location']['locationLink'];
+                      if (await canLaunchUrl(Uri.parse(url))) {
+                        await launchUrl(
+                          Uri.parse(url),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ],

@@ -5,6 +5,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../services/location_service.dart';
+import 'package:geolocator/geolocator.dart';
+import '../screen/location_picker_screen.dart';
 
 class ComplaintSubmissionScreen extends StatefulWidget {
   final String userName;
@@ -22,6 +26,8 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
   String _selectedCategory = 'Infrastructure';
   File? _image;
   final ImagePicker _picker = ImagePicker();
+  LatLng? _selectedLocation;
+  String? _locationAddress;
 
   Future<void> _getImage(ImageSource source) async {
     try {
@@ -111,6 +117,40 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
     );
   }
 
+  void _showLocationPicker() async {
+    final Position? currentPosition =
+        await LocationService.getCurrentLocation();
+    if (currentPosition == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to get current location')),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final LatLng? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(
+          initialPosition: LatLng(
+            currentPosition.latitude,
+            currentPosition.longitude,
+          ),
+        ),
+      ),
+    );
+
+    if (result != null) {
+      _selectedLocation = result;
+      _locationAddress = await LocationService.getAddressFromCoordinates(
+        result.latitude,
+        result.longitude,
+      );
+      setState(() {});
+    }
+  }
+
   Future<void> _submitComplaint() async {
     try {
       // Get appropriate base URL
@@ -135,6 +175,13 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
               'image': _image != null
                   ? base64Encode(await _image!.readAsBytes())
                   : null, // If image is selected
+              'location': _selectedLocation != null
+                  ? {
+                      'latitude': _selectedLocation!.latitude,
+                      'longitude': _selectedLocation!.longitude,
+                      'address': _locationAddress ?? 'Location selected'
+                    }
+                  : null,
             }),
           )
           .timeout(const Duration(seconds: 30));
@@ -228,6 +275,30 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
                 ),
               ),
               _buildImagePreview(),
+              const SizedBox(height: 20),
+              if (_selectedLocation != null)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.location_on),
+                    title: Text(_locationAddress ?? 'Location selected'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() {
+                        _selectedLocation = null;
+                        _locationAddress = null;
+                      }),
+                    ),
+                  ),
+                ),
+              ElevatedButton.icon(
+                onPressed: _showLocationPicker,
+                icon: const Icon(Icons.add_location),
+                label: const Text('Add Location'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitComplaint,
