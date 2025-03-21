@@ -50,7 +50,7 @@ class SplashScreenState extends State<SplashScreen>
           children: [
             ScaleTransition(
               scale: _logoAnimation,
-              child: Image(
+              child: const Image(
                 image: AssetImage('assets/GrievEase.jpg'),
                 height: 600,
                 width: 500,

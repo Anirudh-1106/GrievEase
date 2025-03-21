@@ -369,7 +369,6 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
       context: context,
       builder: (context) => Dialog(
         child: SingleChildScrollView(
-          // Wrap with SingleChildScrollView
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -381,13 +380,15 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 16),
-                _buildDetailRow('ID', complaint['complaintId']),
-                _buildDetailRow('Title', complaint['title']),
-                _buildDetailRow('Category', complaint['category']),
-                _buildDetailRow('Status', complaint['status']),
-                _buildDetailRow('Description', complaint['description']),
-
-                // Add image display if available
+                _buildDetailRow('ID', complaint['complaintId'] ?? 'N/A'),
+                _buildDetailRow('Student Name', complaint['userName'] ?? 'N/A'),
+                _buildDetailRow('Registration No.',
+                    complaint['registrationNumber'] ?? 'N/A'),
+                _buildDetailRow('Category', complaint['category'] ?? 'N/A'),
+                _buildDetailRow('Status', complaint['status'] ?? 'N/A'),
+                _buildDetailRow('Title', complaint['title'] ?? 'N/A'),
+                _buildDetailRow(
+                    'Description', complaint['description'] ?? 'N/A'),
                 if (complaint['image'] != null &&
                     complaint['image'].isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -409,7 +410,6 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
                     ),
                   ),
                 ],
-
                 const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerRight,

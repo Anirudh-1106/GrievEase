@@ -82,6 +82,7 @@ class _ComplaintHistoryScreenState extends State<ComplaintHistoryScreen> {
                       itemCount: _complaints.length,
                       itemBuilder: (context, index) {
                         final complaint = _complaints[index];
+                        // Remove userName from display here
                         return Card(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16,
