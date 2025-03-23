@@ -40,7 +40,7 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
       final queryParams = {
         'status': _selectedStatus != 'All' ? _selectedStatus : '',
         'category': _selectedCategory != 'All' ? _selectedCategory : '',
-        'sort': _selectedSort,
+        'sort': _selectedSort == 'newest' ? '-createdAt' : 'createdAt',
       };
 
       final uri = Uri.parse('$baseUrl/complaints').replace(

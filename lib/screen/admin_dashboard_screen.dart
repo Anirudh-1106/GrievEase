@@ -32,6 +32,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   String _selectedStatus = 'All';
   String _selectedCategory = 'All';
   String _selectedMonth = 'All';
+  int _selectedYear = DateTime.now().year;
 
   final List<String> _statusFilters = [
     'All',
@@ -58,6 +59,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       months.add(DateFormat('MMMM yyyy').format(month));
     }
     return months;
+  }
+
+  List<int> get _yearFilters {
+    final currentYear = DateTime.now().year;
+    return List.generate(5, (index) => currentYear - index);
   }
 
   @override
@@ -461,45 +467,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  List<FlSpot> _getFilteredLineChartSpots() {
-    try {
-      final complaintsData = _dashboardData['monthlyComplaints'] as List? ?? [];
-      if (complaintsData.isEmpty) {
-        return [const FlSpot(0, 0)];
-      }
-
-      return List.generate(12, (index) {
-        final date = DateTime.now().subtract(Duration(days: 30 * index));
-        final monthYear = DateFormat('yyyy-MM').format(date);
-
-        final monthData = complaintsData.firstWhere(
-          (data) => data['_id'] == monthYear,
-          orElse: () => {'statuses': [], 'totalCount': 0},
-        );
-
-        int count = 0;
-        if (_selectedStatus == 'All' && _selectedCategory == 'All') {
-          count = monthData['totalCount'] ?? 0;
-        } else {
-          final statuses = monthData['statuses'] as List? ?? [];
-          count = statuses.where((status) {
-            final matchesStatus =
-                _selectedStatus == 'All' || status['status'] == _selectedStatus;
-            final matchesCategory = _selectedCategory == 'All' ||
-                status['category'] == _selectedCategory;
-            return matchesStatus && matchesCategory;
-          }).fold(
-              0, (sum, status) => sum + (status['count'] ?? 0).toInt() as int);
-        }
-
-        return FlSpot(index.toDouble(), count.toDouble());
-      });
-    } catch (e) {
-      print('Error in _getFilteredLineChartSpots: $e');
-      return [const FlSpot(0, 0)];
-    }
-  }
-
   List<PieChartSectionData> _generatePieChartSections(List filteredData) {
     return filteredData.map<PieChartSectionData>((category) {
       final color = _getCategoryColor(category['_id']);
@@ -836,140 +803,258 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildEnhancedLineChart() {
-    final hasFilters = _selectedStatus != 'All' || _selectedCategory != 'All';
-    final List<LineChartBarData> bars = [
-      LineChartBarData(
-        spots: _getFilteredLineChartSpotsByStatus(status: 'All'),
-        isCurved: true,
-        color: Colors.blue,
-        barWidth: 3,
-        dotData: const FlDotData(show: true),
-        belowBarData: BarAreaData(
-          show: true,
-          color: Colors.blue.withOpacity(0.1),
-          cutOffY: 0, // Add this to prevent drawing below 0
-          applyCutOffY: true, // Add this to enable the cutoff
-        ),
-      ),
-    ];
+    final now = DateTime.now();
+    final isCurrentYear = _selectedYear == now.year;
+    final monthsToShow = isCurrentYear ? now.month : 12;
 
-    if (hasFilters) {
-      bars.add(
-        LineChartBarData(
-          spots: _getFilteredLineChartSpots(),
-          isCurved: true,
-          color: _getStatusColor(_selectedStatus),
-          barWidth: 3,
-          dotData: const FlDotData(show: true),
-          belowBarData: BarAreaData(
-            show: true,
-            color: _getStatusColor(_selectedStatus).withOpacity(0.1),
-            cutOffY: 0, // Add this to prevent drawing below 0
-            applyCutOffY: true, // Add this to enable the cutoff
+    return Column(
+      children: [
+        // Year filter with instant update
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButton<int>(
+                  value: _selectedYear,
+                  underline: const SizedBox(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedYear = value!;
+                      _fetchDashboardData(); // Refresh data when year changes
+                    });
+                  },
+                  items: _yearFilters.map((year) {
+                    return DropdownMenuItem(
+                      value: year,
+                      child: Text(
+                        year.toString(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    }
-
-    return LineChart(
-      LineChartData(
-        clipData: const FlClipData
-            .all(), // Add this to clip data outside the chart area
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: true,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey[300],
-            strokeWidth: 1,
-          ),
-          getDrawingVerticalLine: (value) => FlLine(
-            color: Colors.grey[300],
-            strokeWidth: 1,
-          ),
-        ),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                if (value < 0 || value > 11) return const Text('');
-                final date =
-                    DateTime.now().subtract(Duration(days: 30 * value.toInt()));
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    DateFormat('MMM').format(date),
-                    style: const TextStyle(fontSize: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 5, // Set horizontal interval to 5 units
+                  verticalInterval: 1,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.shade200,
+                    strokeWidth: 1,
                   ),
-                );
-              },
-              reservedSize: 40,
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: Colors.grey.shade200,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      interval: monthsToShow > 6
+                          ? 2
+                          : 1, // Adjust interval based on number of months
+                      getTitlesWidget: (value, meta) {
+                        if (value >= 0 && value < monthsToShow) {
+                          const months = [
+                            'Jan',
+                            'Feb',
+                            'Mar',
+                            'Apr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Aug',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dec'
+                          ];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              months[value.toInt()],
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: 5, // Set vertical interval to 5 units
+                      getTitlesWidget: (value, meta) {
+                        if (value == value.roundToDouble()) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Text(
+                              value.toInt().toString(),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
+                    ),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+                    left: BorderSide(color: Colors.grey.shade300, width: 1),
+                  ),
+                ),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _getMonthlySpots(),
+                    isCurved: true,
+                    preventCurveOverShooting: true,
+                    color: _getLineColor(),
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) {
+                        return FlDotCirclePainter(
+                          radius: 4,
+                          color: Colors.white,
+                          strokeWidth: 2,
+                          strokeColor: _getLineColor(),
+                        );
+                      },
+                      checkToShowDot: (spot, barData) => true,
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: _getLineColor().withOpacity(0.1),
+                      cutOffY: 0,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                ],
+                minX: 0,
+                maxX: (monthsToShow - 1).toDouble(),
+                minY: 0,
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipPadding: const EdgeInsets.all(8),
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((touchedSpot) {
+                        return LineTooltipItem(
+                          '${touchedSpot.y}',
+                          const TextStyle(color: Colors.white),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Text(
-                    value.toInt().toString(),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                );
-              },
-              reservedSize: 40,
-            ),
-          ),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
-        borderData: FlBorderData(show: true),
-        lineBarsData: bars,
-        minX: 0,
-        maxX: 11,
-        minY: 0,
-        maxY: null, // Let maxY be calculated automatically
-      ),
+      ],
     );
   }
 
-  List<FlSpot> _getFilteredLineChartSpotsByStatus({required String status}) {
-    final complaintsData = _dashboardData['monthlyComplaints'] as List? ?? [];
-    return List.generate(12, (index) {
-      final date = DateTime.now().subtract(Duration(days: 30 * index));
-      final monthYear = DateFormat('yyyy-MM').format(date);
+  List<FlSpot> _getMonthlySpots() {
+    final spots = <FlSpot>[];
+    final monthlyData = _dashboardData['monthlyComplaints'] as List? ?? [];
+    final now = DateTime.now();
 
-      final monthData = complaintsData.firstWhere(
-        (data) => data['_id'] == monthYear,
-        orElse: () => {'count': 0},
+    // If it's current year, show only up to current month
+    final monthsToShow = _selectedYear == now.year ? now.month : 12;
+
+    for (int i = 0; i < monthsToShow; i++) {
+      final monthStr = '$_selectedYear-${(i + 1).toString().padLeft(2, '0')}';
+      final monthData = monthlyData.firstWhere(
+        (data) => data['_id'] == monthStr,
+        orElse: () => {'totalCount': 0},
       );
 
-      if (status == 'All') {
-        return FlSpot(
-            index.toDouble(), (monthData['totalCount'] ?? 0).toDouble());
+      int count = 0;
+      if (_selectedStatus == 'All' && _selectedCategory == 'All') {
+        count = monthData['totalCount'] ?? 0;
+      } else {
+        final statuses = monthData['statuses'] as List? ?? [];
+        count = statuses.where((status) {
+          final matchesStatus =
+              _selectedStatus == 'All' || status['status'] == _selectedStatus;
+          final matchesCategory = _selectedCategory == 'All' ||
+              status['category'] == _selectedCategory;
+          return matchesStatus && matchesCategory;
+        }).fold(
+            0, (sum, status) => sum + (status['count'] ?? 0).toInt() as int);
       }
 
-      final statusData = monthData['statuses']?.firstWhere(
-        (complaint) => complaint['status'] == status,
-        orElse: () => {'count': 0},
-      );
+      spots.add(FlSpot(i.toDouble(), count.toDouble()));
+    }
+    return spots;
+  }
 
-      return FlSpot(index.toDouble(), (statusData?['count'] ?? 0).toDouble());
-    });
+  Color _getLineColor() {
+    switch (_selectedStatus) {
+      case 'Pending':
+        return Colors.orange;
+      case 'In Progress':
+        return Colors.blue;
+      case 'Resolved':
+        return Colors.green;
+      case 'Reopened':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
   }
 
   // Update the existing build method to use simpler charts in the dashboard
   Widget _buildSimpleLineChart() {
+    final now = DateTime.now();
+    final isCurrentYear = _selectedYear == now.year;
+    final monthsToShow = isCurrentYear ? now.month : 12;
+
     return LineChart(
       LineChartData(
-        clipData: const FlClipData
-            .all(), // Add this to clip data outside the chart area
+        clipData: const FlClipData.all(),
         gridData: const FlGridData(show: false),
         titlesData: const FlTitlesData(
-          // Simplified titles for dashboard view
           bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -978,23 +1063,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         borderData: FlBorderData(show: false),
         lineBarsData: [
           LineChartBarData(
-            spots: _getFilteredLineChartSpots(),
+            spots:
+                _getMonthlySpots(), // Changed from _getFilteredLineChartSpots to _getMonthlySpots
             isCurved: true,
-            color: Colors.blue,
+            color: _getLineColor(),
             barWidth: 2,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withOpacity(0.1),
-              cutOffY: 0, // Add this to prevent drawing below 0
-              applyCutOffY: true, // Add this to enable the cutoff
+              color: _getLineColor().withOpacity(0.1),
+              cutOffY: 0,
+              applyCutOffY: true,
             ),
           ),
         ],
         minX: 0,
-        maxX: 11,
+        maxX: (monthsToShow - 1).toDouble(),
         minY: 0,
-        maxY: null, // Let maxY be calculated automatically
       ),
     );
   }

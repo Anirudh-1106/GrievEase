@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -157,14 +158,38 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
           pw.Table.fromTextArray(
             context: context,
             data: <List<String>>[
-              ['ID', 'Category', 'Status', 'Title'], // Header
+              // Header row with all columns
+              ['ID', 'Title', 'Category', 'Status', 'Date Registered'],
+              // Data rows
               ..._reportData.map((complaint) => [
                     complaint['complaintId'],
+                    complaint['title'],
                     complaint['category'],
                     complaint['status'],
-                    complaint['title'],
+                    DateFormat('MMM dd, yyyy')
+                        .format(DateTime.parse(complaint['createdAt'])),
                   ])
             ],
+            // Customize header style
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.white,
+            ),
+            headerDecoration: const pw.BoxDecoration(
+              color: PdfColors.blue600,
+            ),
+            // Adjust column widths
+            columnWidths: {
+              0: const pw.FlexColumnWidth(2), // ID
+              1: const pw.FlexColumnWidth(4), // Title
+              2: const pw.FlexColumnWidth(2), // Category
+              3: const pw.FlexColumnWidth(2), // Status
+              4: const pw.FlexColumnWidth(2), // Date
+            },
+            // Add alternating row colors
+            oddRowDecoration: const pw.BoxDecoration(
+              color: PdfColors.grey100,
+            ),
           ),
         ],
       ),
@@ -345,13 +370,6 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
         );
       }).toList(),
     );
-  }
-
-  DateTime _getDateForTimelinePoint(int index) {
-    final timelineData =
-        List<Map<String, dynamic>>.from(_analytics['timelineData'] ?? []);
-    if (timelineData.isEmpty) return DateTime.now();
-    return DateTime.parse(timelineData[index]['_id']);
   }
 
   Widget _buildEnhancedLineChart() {

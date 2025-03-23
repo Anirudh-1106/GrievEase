@@ -512,7 +512,7 @@ app.get('/admin/dashboard', async (req, res) => {
 // Get all complaints with filters
 app.get('/complaints', async (req, res) => {
   try {
-    const { status, category, sortBy = 'createdAt', order = 'desc' } = req.query;
+    const { status, category, sort = '-createdAt' } = req.query;
     const query = {};
     
     if (status && status !== 'All') {
@@ -522,9 +522,17 @@ app.get('/complaints', async (req, res) => {
       query.category = category;
     }
 
+    // Convert sort parameter to mongoose sort object
+    const sortOrder = {};
+    if (sort.startsWith('-')) {
+      sortOrder[sort.substring(1)] = -1;
+    } else {
+      sortOrder[sort] = 1;
+    }
+
     const complaints = await Complaint.find(query)
-      .lean()  // Convert to plain JavaScript objects
-      .sort({ [sortBy]: order });
+      .lean()
+      .sort(sortOrder);
 
     // Fetch user details for each complaint
     const complaintsWithUserDetails = await Promise.all(
