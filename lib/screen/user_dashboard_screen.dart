@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_dashboard_card.dart';
+import 'profile_page.dart'; // Import the correct ProfilePage
 
 class UserDashboardScreen extends StatefulWidget {
   final String userName;
@@ -7,15 +8,91 @@ class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key, required this.userName});
 
   @override
-  _UserDashboardScreenState createState() => _UserDashboardScreenState();
+  State<UserDashboardScreen> createState() => _UserDashboardScreenState();
 }
 
 class _UserDashboardScreenState extends State<UserDashboardScreen> {
+  int _selectedIndex = 0;
+
+  List<Widget> _pages() => <Widget>[
+        DashboardPage(userName: widget.userName),
+        ProfilePage(userName: widget.userName), // Use the correct ProfilePage
+        const SettingsPage(),
+      ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages()[_selectedIndex],
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.deepPurple,
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: true,
+          onTap: _onItemTapped,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardPage extends StatelessWidget {
+  final String userName;
+  const DashboardPage({super.key, required this.userName});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('Home'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -33,7 +110,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Welcome, ${widget.userName}!',
+                'Welcome, $userName!',
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -61,8 +138,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                           onTap: () => Navigator.pushNamed(
                             context,
                             '/submit-complaint',
-                            arguments: widget
-                                .userName, // Passing the username to complaint screen
+                            arguments:
+                                userName, // Passing the username to complaint screen
                           ),
                         );
                       case 1:
@@ -73,7 +150,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                           color: Colors.green,
                           onTap: () => Navigator.pushNamed(
                               context, '/complaint-history',
-                              arguments: widget.userName),
+                              arguments: userName),
                         );
                       case 2:
                         return CustomDashboardCard(
@@ -108,5 +185,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         ),
       ),
     );
+  }
+}
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text('Settings Page'));
   }
 }

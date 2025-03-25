@@ -713,6 +713,82 @@ app.get('/complaints/image/:complaintId', async (req, res) => {
   }
 });
 
+// Get user details
+app.get('/user/:userName', async (req, res) => {
+  try {
+    const user = await User.findOne({ name: req.params.userName });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      user: {
+        name: user.name,
+        email: user.email,
+        registrationNumber: user.registrationNumber
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Get complaint count for user
+app.get('/complaints/count/:userName', async (req, res) => {
+  try {
+    const count = await Complaint.countDocuments({ userName: req.params.userName });
+    res.json({
+      success: true,
+      count: count
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Add password change endpoint
+app.post('/user/change-password', async (req, res) => {
+  try {
+    const { userName, currentPassword, newPassword } = req.body;
+    
+    // Find user and verify current password
+    const user = await User.findOne({ 
+      name: userName,
+      password: currentPassword 
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Add route not found handler
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.url} not found` });
