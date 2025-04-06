@@ -1,0 +1,29 @@
+{
+    "project_info": {
+      "project_number": "806041672754",
+      "project_id": "grievease-991cd",
+      "storage_bucket": "grievease-991cd.firebasestorage.app"
+    },
+    "client": [
+      {
+        "client_info": {
+          "mobilesdk_app_id": "1:806041672754:android:51bd8bf31d235db018302b",
+          "android_client_info": {
+            "package_name": "com.example.grievease"
+          }
+        },
+        "oauth_client": [],
+        "api_key": [
+          {
+            "current_key": "AIzaSyC3f5NTLmQO_DsryLQp084mw6GcLrnt6D0"
+          }
+        ],
+        "services": {
+          "appinvite_service": {
+            "other_platform_oauth_client": []
+          }
+        }
+      }
+    ],
+    "configuration_version": "1"
+  }

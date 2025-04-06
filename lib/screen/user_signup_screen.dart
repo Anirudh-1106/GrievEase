@@ -71,7 +71,7 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -109,7 +109,7 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [
                           Color(0xFF7F7FD5),
                           Color(0xFF86A8E7),
@@ -120,13 +120,13 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.person_add,
                       color: Colors.white,
                       size: 40,
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Welcome Title
                   Text(
@@ -138,16 +138,17 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Name Input
                   TextField(
                     controller: _nameController,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Name',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.person, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.person, color: Colors.white54),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.1),
                       border: OutlineInputBorder(
@@ -171,16 +172,17 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Registration Number Input
                   TextField(
                     controller: _regNoController,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Registration Number',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.numbers, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.numbers, color: Colors.white54),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.1),
                       border: OutlineInputBorder(
@@ -204,16 +206,17 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Email Input
                   TextField(
                     controller: _emailController,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'MBCET Email ID',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.email, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.email, color: Colors.white54),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.1),
                       border: OutlineInputBorder(
@@ -237,17 +240,17 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Password Input
                   TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.lock, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon: const Icon(Icons.lock, color: Colors.white54),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -284,16 +287,16 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Signup Button
                   GestureDetector(
                     onTap: _signup,
                     child: Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           colors: [
                             Color(0xFF7F7FD5),
                             Color(0xFF86A8E7),
@@ -307,7 +310,7 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.2),
                             blurRadius: 10,
-                            offset: Offset(0, 5),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),

@@ -80,7 +80,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -118,7 +118,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [
                           Color(0xFF7F7FD5),
                           Color(0xFF86A8E7),
@@ -129,13 +129,13 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.person,
                       color: Colors.white,
                       size: 40,
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Welcome Title
                   Text(
@@ -147,16 +147,17 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Email Input
                   TextField(
                     controller: emailController,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Email',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.email, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.email, color: Colors.white54),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.1),
                       border: OutlineInputBorder(
@@ -180,17 +181,17 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Password Input
                   TextField(
                     controller: passwordController,
                     obscureText: _obscurePassword,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.lock, color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon: const Icon(Icons.lock, color: Colors.white54),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
@@ -227,16 +228,16 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   // Login Button
                   GestureDetector(
                     onTap: _login,
                     child: Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           colors: [
                             Color(0xFF7F7FD5),
                             Color(0xFF86A8E7),
@@ -250,7 +251,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                           BoxShadow(
                             color: Colors.black.withOpacity(0.2),
                             blurRadius: 10,
-                            offset: Offset(0, 5),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),
@@ -266,7 +267,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   // Sign Up Link
                   GestureDetector(

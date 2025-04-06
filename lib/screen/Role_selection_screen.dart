@@ -33,7 +33,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 ).createShader(bounds);
               },
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.transparent,
                   backgroundBlendMode: BlendMode.overlay,
                 ),
@@ -60,7 +60,7 @@ class RoleSelectionScreen extends StatelessWidget {
                   _buildLogo(),
                   const SizedBox(height: 40),
                   Text(
-                    'Welcome to GrievEase',
+                    'GrievEase',
                     style: GoogleFonts.poppins(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
