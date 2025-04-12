@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_dashboard_card.dart';
 import 'profile_page.dart'; // Import the correct ProfilePage
+import 'settings_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   final String userName;
@@ -193,6 +194,9 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Settings Page'));
+    // Get the userName from the nearest UserDashboardScreen ancestor
+    final dashboardScreen =
+        context.findAncestorWidgetOfExactType<UserDashboardScreen>();
+    return SettingsScreen(userName: dashboardScreen?.userName ?? 'User');
   }
 }
