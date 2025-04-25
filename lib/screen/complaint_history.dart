@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
+
 import 'complaint_detail_screen.dart';
 
 class ComplaintHistoryScreen extends StatefulWidget {
@@ -27,11 +26,7 @@ class _ComplaintHistoryScreenState extends State<ComplaintHistoryScreen> {
 
   Future<void> _fetchComplaints() async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/complaints/${widget.userName}'),

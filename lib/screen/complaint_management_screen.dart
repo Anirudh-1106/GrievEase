@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
+
 //import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -31,11 +30,7 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
 
   Future<void> _fetchComplaints() async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final queryParams = {
         'status': _selectedStatus != 'All' ? _selectedStatus : '',
@@ -82,11 +77,7 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
   Future<void> _updateComplaintStatus(
       String complaintId, String newStatus, String comment) async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http
           .post(
@@ -105,6 +96,8 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
       if (!mounted) return;
 
       if (response.statusCode == 200) {
+        Navigator.pop(
+            context); // Close the update dialog after successful update
         _fetchComplaints();
       } else {
         throw Exception('Failed to update status');

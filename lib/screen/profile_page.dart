@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform, File;
+
+import 'dart:io' show File;
 
 class ProfilePage extends StatefulWidget {
   final String userName;
@@ -30,11 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchUserData() async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/user/${widget.userName}'),
@@ -57,11 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchComplaintCount() async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/complaints/count/${widget.userName}'),
@@ -297,11 +289,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ? () async {
                                 setState(() => isLoading = true);
                                 try {
-                                  final baseUrl = kIsWeb
-                                      ? 'http://localhost:3000'
-                                      : Platform.isAndroid
-                                          ? 'http://10.0.2.2:3000'
-                                          : 'http://localhost:3000';
+                                  const String baseUrl =
+                                      "http://192.168.1.100:3000";
 
                                   final response = await http.post(
                                     Uri.parse('$baseUrl/user/change-password'),

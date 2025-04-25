@@ -3,8 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:io' show Platform;
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -27,14 +25,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   };
   bool _isLoading = true;
   String? _error;
+  List<Map<String, dynamic>> _filteredData = [];
 
-  // Add new state variables
   String _selectedStatus = 'All';
   String _selectedCategory = 'All';
   String _selectedMonth = 'All';
-  int _selectedYear = DateTime.now().year;
+  final int _selectedYear = DateTime.now().year;
 
-  final List<String> _statusFilters = [
+  static const List<String> _statusFilters = [
     'All',
     'Pending',
     'In Progress',
@@ -51,16 +49,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     'Others'
   ];
 
-  List<String> get _monthFilters {
-    final months = ['All'];
-    final now = DateTime.now();
-    for (int i = 0; i < 12; i++) {
-      final month = DateTime(now.year, now.month - i, 1);
-      months.add(DateFormat('MMMM yyyy').format(month));
-    }
-    return months;
-  }
-
   List<int> get _yearFilters {
     final currentYear = DateTime.now().year;
     return List.generate(5, (index) => currentYear - index);
@@ -74,11 +62,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/admin/dashboard'),
@@ -94,6 +78,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             _dashboardData = data['data'];
             _isLoading = false;
             _error = null;
+            _updateFilteredData();
           });
         } else {
           throw Exception(data['message'] ?? 'Invalid data format');
@@ -107,7 +92,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _error = e.toString();
         _isLoading = false;
       });
-      print('Error fetching dashboard data: $e');
+      debugPrint('Error fetching dashboard data: $e');
     }
   }
 
@@ -148,7 +133,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         leading: Builder(
-          // Wrap the IconButton with Builder
           builder: (BuildContext context) {
             return IconButton(
               icon: const Icon(Icons.menu),
@@ -203,9 +187,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
             // Charts
             SizedBox(
               height: 300,
@@ -258,9 +240,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
             // Recent Complaints List
             const Text(
               'Recent Complaints',
@@ -338,7 +318,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   List<PieChartSectionData> _getPieChartSections() {
-    final categoryData = _dashboardData['categoryDistribution'] as List? ?? [];
+    final categoryData = _filteredData.isNotEmpty
+        ? _filteredData
+        : (_dashboardData['categoryDistribution'] as List? ?? []);
     if (categoryData.isEmpty) {
       return [
         PieChartSectionData(
@@ -351,7 +333,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
     return categoryData.map((category) {
       final color = _getCategoryColor(category['_id']);
-      final value = category['count'].toDouble();
+      final value = (category['count'] ?? 0).toDouble();
       return PieChartSectionData(
         color: color,
         value: value,
@@ -365,121 +347,414 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }).toList();
   }
 
-  // Modified pie chart method
-  Widget _buildPieChartWithLegend() {
-    return Column(
-      children: [
-        // Month filter dropdown
-        DropdownButton<String>(
-          value: _selectedMonth,
-          items: _monthFilters.map((month) {
-            return DropdownMenuItem(
-              value: month,
-              child: Text(month),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedMonth = value!;
-            });
-          },
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: PieChart(
-                  PieChartData(
-                    sections: _getFilteredPieChartSections(),
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 0,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 1,
-                child: _buildFilteredLegend(),
-              ),
-            ],
+  void _updateFilteredData() {
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    final filteredData = _dashboardData['categoryDistribution'] as List? ?? [];
+
+    List<Map<String, dynamic>> tempData =
+        List<Map<String, dynamic>>.from(filteredData);
+    if (_selectedMonth != 'All') {
+      DateTime startDate;
+      switch (_selectedMonth) {
+        case 'This Month':
+          startDate = DateTime(now.year, now.month, 1);
+          break;
+        case 'Last Month':
+          startDate = DateTime(now.year, now.month - 1, 1);
+          break;
+        case 'Last 3 Months':
+          startDate = DateTime(now.year, now.month - 3, 1);
+          break;
+        case 'Last 6 Months':
+          startDate = DateTime(now.year, now.month - 6, 1);
+          break;
+        default:
+          startDate = DateTime(now.year, now.month, 1);
+      }
+
+      tempData = tempData.where((item) {
+        if (item['date'] == null) return false;
+        try {
+          final date = DateTime.parse(item['date']);
+          return date.isAfter(startDate) &&
+              date.isBefore(now.add(const Duration(days: 1)));
+        } catch (_) {
+          return false;
+        }
+      }).toList();
+    }
+
+    if (_selectedCategory != 'All') {
+      tempData = tempData
+          .where((item) => item['category'] == _selectedCategory)
+          .toList();
+    }
+
+    setState(() {
+      _filteredData = tempData;
+    });
+  }
+
+  Widget _buildSimplePieChart() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: PieChart(
+          PieChartData(
+            sections: _getPieChartSections(),
+            sectionsSpace: 2,
+            centerSpaceRadius: 30,
+            startDegreeOffset: -90,
           ),
         ),
-      ],
+      ),
     );
   }
 
-  List<PieChartSectionData> _getFilteredPieChartSections() {
+  Widget _buildSimpleLineChart() {
+    final now = DateTime.now();
+    final isCurrentYear = _selectedYear == now.year;
+    final monthsToShow = isCurrentYear ? now.month : 12;
+
+    return LineChart(
+      LineChartData(
+        clipData: const FlClipData.all(),
+        gridData: const FlGridData(show: false),
+        titlesData: const FlTitlesData(
+          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: _getMonthlySpots(),
+            isCurved: true,
+            color: _getLineColor(),
+            barWidth: 2,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              color: _getLineColor().withOpacity(0.1),
+              cutOffY: 0,
+              applyCutOffY: true,
+            ),
+          ),
+        ],
+        minX: 0,
+        maxX: (monthsToShow - 1).toDouble(),
+        minY: 0,
+      ),
+    );
+  }
+
+  List<FlSpot> _getMonthlySpots() {
     try {
-      final categoryData =
-          _dashboardData['categoryDistribution'] as List? ?? [];
-      if (categoryData.isEmpty) {
-        return [
-          PieChartSectionData(
-            color: Colors.grey,
-            value: 1,
-            title: 'No Data',
-            radius: 100,
-          )
-        ];
+      final spots = <FlSpot>[];
+      final monthlyData = _dashboardData['monthlyComplaints'] as List? ?? [];
+      final now = DateTime.now();
+      final monthsToShow = _selectedYear == now.year ? now.month : 12;
+
+      for (int i = 0; i < monthsToShow; i++) {
+        final monthStr = '$_selectedYear-${(i + 1).toString().padLeft(2, '0')}';
+        final monthData = monthlyData.firstWhere(
+          (data) => data['_id'] == monthStr,
+          orElse: () => {'totalCount': 0, 'statuses': []},
+        );
+
+        double count = 0;
+        if (_selectedStatus == 'All' && _selectedCategory == 'All') {
+          count = (monthData['totalCount'] ?? 0).toDouble();
+        } else {
+          final statuses = monthData['statuses'] as List? ?? [];
+          count = statuses
+              .where((status) =>
+                  (_selectedStatus == 'All' ||
+                      status['status'] == _selectedStatus) &&
+                  (_selectedCategory == 'All' ||
+                      status['category'] == _selectedCategory))
+              .fold<double>(
+                0,
+                (sum, status) => sum + (status['count'] ?? 0).toDouble(),
+              );
+        }
+        spots.add(FlSpot(i.toDouble(), count));
       }
-
-      final filteredData = _selectedMonth == 'All'
-          ? categoryData
-          : categoryData.where((category) {
-              final complaints = category['complaints'] as List? ?? [];
-              return complaints.any((complaint) {
-                try {
-                  final complaintDate =
-                      DateTime.parse(complaint['createdAt'] ?? '');
-                  final monthYear =
-                      DateFormat('MMMM yyyy').format(complaintDate);
-                  return monthYear == _selectedMonth;
-                } catch (e) {
-                  print('Date parsing error: $e');
-                  return false;
-                }
-              });
-            }).toList();
-
-      if (filteredData.isEmpty) {
-        return [
-          PieChartSectionData(
-            color: Colors.grey,
-            value: 1,
-            title: 'No Data',
-            radius: 100,
-          )
-        ];
-      }
-
-      return _generatePieChartSections(filteredData);
+      return spots;
     } catch (e) {
-      print('Error in _getFilteredPieChartSections: $e');
+      debugPrint('Error generating monthly spots: $e');
+      return [const FlSpot(0, 0)];
+    }
+  }
+
+  Color _getLineColor() {
+    switch (_selectedStatus) {
+      case 'Pending':
+        return Colors.orange;
+      case 'In Progress':
+        return Colors.blue;
+      case 'Resolved':
+        return Colors.green;
+      case 'Reopened':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  Widget _buildOverviewCard(
+      String title, String value, IconData icon, Color color) {
+    return Card(
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showExpandedPieChart() {
+    String dialogSelectedMonth = 'All';
+    int dialogSelectedYear = DateTime.now().year;
+
+    List<Map<String, dynamic>> getFilteredData() {
+      final allData = List<Map<String, dynamic>>.from(
+          _dashboardData['categoryDistribution'] ?? []);
+      if (dialogSelectedMonth == 'All') return allData;
+      return allData.where((item) {
+        if (item['complaints'] == null) return false;
+        final complaints = item['complaints'] as List;
+        return complaints.any((complaint) {
+          try {
+            final date = DateTime.parse(complaint['createdAt'] ?? '');
+            final monthMatch =
+                DateFormat('MMMM').format(date) == dialogSelectedMonth;
+            final yearMatch = date.year == dialogSelectedYear;
+            return monthMatch && yearMatch;
+          } catch (_) {
+            return false;
+          }
+        });
+      }).toList();
+    }
+
+    final monthsList = [
+      'All',
+      ...List.generate(12, (i) => DateFormat('MMMM').format(DateTime(0, i + 1)))
+    ];
+    final yearsList = List.generate(5, (i) => DateTime.now().year - i);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => StatefulBuilder(
+        builder: (context, setState) {
+          final filteredData = getFilteredData();
+          final hasData = filteredData.isNotEmpty &&
+              filteredData.any((cat) => (cat['count'] ?? 0) > 0);
+
+          return Dialog(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Complaints Distribution by Category',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: dialogSelectedMonth,
+                            decoration: const InputDecoration(
+                              labelText: 'Month',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            items: monthsList.map((month) {
+                              return DropdownMenuItem(
+                                value: month,
+                                child: Text(month),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                dialogSelectedMonth = value!;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: dialogSelectedYear,
+                            decoration: const InputDecoration(
+                              labelText: 'Year',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            items: yearsList.map((year) {
+                              return DropdownMenuItem(
+                                value: year,
+                                child: Text(year.toString()),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                dialogSelectedYear = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    hasData
+                        ? AspectRatio(
+                            aspectRatio: 1.3,
+                            child: Card(
+                              elevation: 8,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: PieChart(
+                                  PieChartData(
+                                    sections: _getPieChartSectionsCustom(
+                                        filteredData),
+                                    sectionsSpace: 3,
+                                    centerSpaceRadius: 40,
+                                    startDegreeOffset: -90,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32.0),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.info_outline,
+                                      color: Colors.grey, size: 48),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'No Data',
+                                    style: TextStyle(
+                                        fontSize: 18, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                    const SizedBox(height: 16),
+                    // Color legend
+                    _buildPieChartLegend(filteredData),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPieChartLegend(List<Map<String, dynamic>> data) {
+    if (data.isEmpty || data.every((cat) => (cat['count'] ?? 0) == 0)) {
+      return const SizedBox.shrink();
+    }
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: data.where((cat) => (cat['count'] ?? 0) > 0).map((cat) {
+          final color = _getCategoryColor(cat['_id']);
+          final label = cat['_id'];
+          final count = cat['count'] ?? 0;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.black12),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '($count)',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  List<PieChartSectionData> _getPieChartSectionsCustom(
+      List<Map<String, dynamic>> data) {
+    if (data.isEmpty || data.every((cat) => (cat['count'] ?? 0) == 0)) {
       return [
         PieChartSectionData(
           color: Colors.grey,
           value: 1,
-          title: 'Error',
+          title: 'No Data',
           radius: 100,
         )
       ];
     }
-  }
-
-  List<PieChartSectionData> _generatePieChartSections(List filteredData) {
-    return filteredData.map<PieChartSectionData>((category) {
+    return data.where((cat) => (cat['count'] ?? 0) > 0).map((category) {
       final color = _getCategoryColor(category['_id']);
       final value = (category['count'] ?? 0).toDouble();
-      final total = filteredData.fold(
-          0, (sum, item) => sum + (item['count'] as int? ?? 0));
-      final percentage = total > 0 ? ((value / total) * 100).round() : 0;
-
       return PieChartSectionData(
         color: color,
         value: value,
-        title: '$percentage%',
-        radius: 100,
+        title: '${category['count']}',
         titleStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -489,50 +764,342 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }).toList();
   }
 
-  Widget _buildFilteredLegend() {
-    final categoryData = _dashboardData['categoryDistribution'] as List;
-    final total =
-        categoryData.fold(0, (sum, item) => sum + (item['count'] as int? ?? 0));
+  void _showExpandedLineChart() {
+    String dialogSelectedStatus = _selectedStatus;
+    String dialogSelectedCategory = _selectedCategory;
+    int dialogSelectedYear = _selectedYear;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: categoryData.map((category) {
-          final count = category['count'] ?? 0;
-          final percentage =
-              total > 0 ? ((count / total) * 100).toStringAsFixed(1) : '0.0';
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 16,
-                  height: 16,
-                  color: _getCategoryColor(category['_id']),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category['_id'],
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Monthly Complaint Analysis',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 20),
+                    // Fix overflow: stack dropdowns vertically on small screens
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 600) {
+                          // Stack vertically for small screens
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildDropdownWithLabel(
+                                label: 'Status',
+                                value: dialogSelectedStatus,
+                                items: _statusFilters,
+                                onChanged: (value) {
+                                  setState(() {
+                                    dialogSelectedStatus = value!;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              _buildDropdownWithLabel(
+                                label: 'Category',
+                                value: dialogSelectedCategory,
+                                items: _categoryFilters,
+                                onChanged: (value) {
+                                  setState(() {
+                                    dialogSelectedCategory = value!;
+                                  });
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              _buildDropdownWithLabel(
+                                label: 'Year',
+                                value: dialogSelectedYear,
+                                items: _yearFilters,
+                                onChanged: (value) {
+                                  setState(() {
+                                    dialogSelectedYear = value!;
+                                  });
+                                },
+                                isInt: true,
+                              ),
+                            ],
+                          );
+                        } else {
+                          // Row for larger screens
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _buildDropdownWithLabel(
+                                  label: 'Status',
+                                  value: dialogSelectedStatus,
+                                  items: _statusFilters,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      dialogSelectedStatus = value!;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildDropdownWithLabel(
+                                  label: 'Category',
+                                  value: dialogSelectedCategory,
+                                  items: _categoryFilters,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      dialogSelectedCategory = value!;
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildDropdownWithLabel(
+                                  label: 'Year',
+                                  value: dialogSelectedYear,
+                                  items: _yearFilters,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      dialogSelectedYear = value!;
+                                    });
+                                  },
+                                  isInt: true,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 350,
+                      child: _buildExpandedLineChart(
+                        dialogSelectedStatus,
+                        dialogSelectedCategory,
+                        dialogSelectedYear,
                       ),
-                      Text(
-                        '$count complaints ($percentage%)',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
-        }).toList(),
+        },
+      ),
+    );
+  }
+
+  // Helper for dropdown with label
+  Widget _buildDropdownWithLabel<T>({
+    required String label,
+    required T value,
+    required List items,
+    required ValueChanged<T?> onChanged,
+    bool isInt = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 2),
+          child:
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        DropdownButtonFormField<T>(
+          value: value,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          items: items.map<DropdownMenuItem<T>>((item) {
+            return DropdownMenuItem<T>(
+              value: item,
+              child: Text(item.toString()),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpandedLineChart(String status, String category, int year) {
+    final now = DateTime.now();
+    final isCurrentYear = year == now.year;
+    final monthsToShow = isCurrentYear ? now.month : 12;
+
+    List<FlSpot> getSpots() {
+      final spots = <FlSpot>[];
+      final monthlyData = _dashboardData['monthlyComplaints'] as List? ?? [];
+      for (int i = 0; i < monthsToShow; i++) {
+        final monthStr = '$year-${(i + 1).toString().padLeft(2, '0')}';
+        final monthData = monthlyData.firstWhere(
+          (data) => data['_id'] == monthStr,
+          orElse: () => {'totalCount': 0, 'statuses': []},
+        );
+        double count = 0;
+        if (status == 'All' && category == 'All') {
+          count = (monthData['totalCount'] ?? 0).toDouble();
+        } else {
+          final statuses = monthData['statuses'] as List? ?? [];
+          count = statuses
+              .where((s) =>
+                  (status == 'All' || s['status'] == status) &&
+                  (category == 'All' || s['category'] == category))
+              .fold<double>(
+                0,
+                (sum, s) => sum + (s['count'] ?? 0).toDouble(),
+              );
+        }
+        spots.add(FlSpot(i.toDouble(), count));
+      }
+      return spots;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: true,
+            horizontalInterval: 5,
+            verticalInterval: 1,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.grey.shade200,
+              strokeWidth: 1,
+            ),
+            getDrawingVerticalLine: (value) => FlLine(
+              color: Colors.grey.shade200,
+              strokeWidth: 1,
+            ),
+          ),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 30,
+                interval: monthsToShow > 6 ? 2 : 1,
+                getTitlesWidget: (value, meta) {
+                  if (value >= 0 && value < monthsToShow) {
+                    const months = [
+                      'Jan',
+                      'Feb',
+                      'Mar',
+                      'Apr',
+                      'May',
+                      'Jun',
+                      'Jul',
+                      'Aug',
+                      'Sep',
+                      'Oct',
+                      'Nov',
+                      'Dec'
+                    ];
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        months[value.toInt()],
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 40,
+                interval: 5,
+                getTitlesWidget: (value, meta) {
+                  if (value == value.roundToDouble()) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        value.toInt().toString(),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }
+                  return const Text('');
+                },
+              ),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.shade300, width: 1),
+              left: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: getSpots(),
+              isCurved: true,
+              preventCurveOverShooting: true,
+              color: _getLineColor(),
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 4,
+                    color: Colors.white,
+                    strokeWidth: 2,
+                    strokeColor: _getLineColor(),
+                  );
+                },
+                checkToShowDot: (spot, barData) => true,
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                color: _getLineColor().withOpacity(0.1),
+                cutOffY: 0,
+                applyCutOffY: true,
+              ),
+            ),
+          ],
+          minX: 0,
+          maxX: (monthsToShow - 1).toDouble(),
+          minY: 0,
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              tooltipPadding: const EdgeInsets.all(8),
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map((touchedSpot) {
+                  return LineTooltipItem(
+                    '${touchedSpot.y}',
+                    const TextStyle(color: Colors.white),
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -591,7 +1158,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // Add helper methods for colors
   Color _getStatusColor(String status) {
     switch (status) {
       case 'Pending':
@@ -622,482 +1188,5 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       default:
         return Colors.blueGrey;
     }
-  }
-
-  Widget _buildOverviewCard(
-      String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 30),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showExpandedPieChart() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            child: Container(
-              padding: const EdgeInsets.all(24.0),
-              width: MediaQuery.of(context).size.width * 0.9,
-              height: MediaQuery.of(context).size.height * 0.8,
-              child: Column(
-                children: [
-                  // Month filter dropdown
-                  SizedBox(
-                    width: 200,
-                    child: DropdownButton<String>(
-                      value: _selectedMonth,
-                      isExpanded: true,
-                      hint: const Text('Select Month'),
-                      items: _monthFilters.map((month) {
-                        return DropdownMenuItem(
-                            value: month, child: Text(month));
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedMonth = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Complaints Distribution by Category',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: _buildPieChartWithLegend(),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showExpandedLineChart() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(24.0),
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Column(
-            children: [
-              // Status and Category filters
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: _selectedStatus,
-                      isExpanded: true,
-                      hint: const Text('Status'),
-                      items: _statusFilters.map((status) {
-                        return DropdownMenuItem(
-                            value: status, child: Text(status));
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStatus = value!;
-                          Navigator.pop(context);
-                          _showExpandedLineChart(); // Refresh dialog
-                        });
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: _selectedCategory,
-                      isExpanded: true,
-                      hint: const Text('Category'),
-                      items: _categoryFilters.map((category) {
-                        return DropdownMenuItem(
-                            value: category, child: Text(category));
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value!;
-                          Navigator.pop(context);
-                          _showExpandedLineChart(); // Refresh dialog
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Title and Legend
-              const Text(
-                'Monthly Complaint Analysis',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildLegendItem('Total', Colors.blue),
-                  const SizedBox(width: 20),
-                  if (_selectedStatus != 'All')
-                    _buildLegendItem(
-                        _selectedStatus, _getStatusColor(_selectedStatus)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Enhanced Line Chart
-              Expanded(child: _buildEnhancedLineChart()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(label),
-      ],
-    );
-  }
-
-  Widget _buildEnhancedLineChart() {
-    final now = DateTime.now();
-    final isCurrentYear = _selectedYear == now.year;
-    final monthsToShow = isCurrentYear ? now.month : 12;
-
-    return Column(
-      children: [
-        // Year filter with instant update
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: DropdownButton<int>(
-                  value: _selectedYear,
-                  underline: const SizedBox(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedYear = value!;
-                      _fetchDashboardData(); // Refresh data when year changes
-                    });
-                  },
-                  items: _yearFilters.map((year) {
-                    return DropdownMenuItem(
-                      value: year,
-                      child: Text(
-                        year.toString(),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: 5, // Set horizontal interval to 5 units
-                  verticalInterval: 1,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey.shade200,
-                    strokeWidth: 1,
-                  ),
-                  getDrawingVerticalLine: (value) => FlLine(
-                    color: Colors.grey.shade200,
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: monthsToShow > 6
-                          ? 2
-                          : 1, // Adjust interval based on number of months
-                      getTitlesWidget: (value, meta) {
-                        if (value >= 0 && value < monthsToShow) {
-                          const months = [
-                            'Jan',
-                            'Feb',
-                            'Mar',
-                            'Apr',
-                            'May',
-                            'Jun',
-                            'Jul',
-                            'Aug',
-                            'Sep',
-                            'Oct',
-                            'Nov',
-                            'Dec'
-                          ];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              months[value.toInt()],
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      interval: 5, // Set vertical interval to 5 units
-                      getTitlesWidget: (value, meta) {
-                        if (value == value.roundToDouble()) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Text(
-                              value.toInt().toString(),
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                    left: BorderSide(color: Colors.grey.shade300, width: 1),
-                  ),
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: _getMonthlySpots(),
-                    isCurved: true,
-                    preventCurveOverShooting: true,
-                    color: _getLineColor(),
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: Colors.white,
-                          strokeWidth: 2,
-                          strokeColor: _getLineColor(),
-                        );
-                      },
-                      checkToShowDot: (spot, barData) => true,
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: _getLineColor().withOpacity(0.1),
-                      cutOffY: 0,
-                      applyCutOffY: true,
-                    ),
-                  ),
-                ],
-                minX: 0,
-                maxX: (monthsToShow - 1).toDouble(),
-                minY: 0,
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    tooltipPadding: const EdgeInsets.all(8),
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((touchedSpot) {
-                        return LineTooltipItem(
-                          '${touchedSpot.y}',
-                          const TextStyle(color: Colors.white),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<FlSpot> _getMonthlySpots() {
-    final spots = <FlSpot>[];
-    final monthlyData = _dashboardData['monthlyComplaints'] as List? ?? [];
-    final now = DateTime.now();
-
-    // If it's current year, show only up to current month
-    final monthsToShow = _selectedYear == now.year ? now.month : 12;
-
-    for (int i = 0; i < monthsToShow; i++) {
-      final monthStr = '$_selectedYear-${(i + 1).toString().padLeft(2, '0')}';
-      final monthData = monthlyData.firstWhere(
-        (data) => data['_id'] == monthStr,
-        orElse: () => {'totalCount': 0},
-      );
-
-      int count = 0;
-      if (_selectedStatus == 'All' && _selectedCategory == 'All') {
-        count = monthData['totalCount'] ?? 0;
-      } else {
-        final statuses = monthData['statuses'] as List? ?? [];
-        count = statuses.where((status) {
-          final matchesStatus =
-              _selectedStatus == 'All' || status['status'] == _selectedStatus;
-          final matchesCategory = _selectedCategory == 'All' ||
-              status['category'] == _selectedCategory;
-          return matchesStatus && matchesCategory;
-        }).fold(
-            0, (sum, status) => sum + (status['count'] ?? 0).toInt() as int);
-      }
-
-      spots.add(FlSpot(i.toDouble(), count.toDouble()));
-    }
-    return spots;
-  }
-
-  Color _getLineColor() {
-    switch (_selectedStatus) {
-      case 'Pending':
-        return Colors.orange;
-      case 'In Progress':
-        return Colors.blue;
-      case 'Resolved':
-        return Colors.green;
-      case 'Reopened':
-        return Colors.red;
-      default:
-        return Colors.blue;
-    }
-  }
-
-  // Update the existing build method to use simpler charts in the dashboard
-  Widget _buildSimpleLineChart() {
-    final now = DateTime.now();
-    final isCurrentYear = _selectedYear == now.year;
-    final monthsToShow = isCurrentYear ? now.month : 12;
-
-    return LineChart(
-      LineChartData(
-        clipData: const FlClipData.all(),
-        gridData: const FlGridData(show: false),
-        titlesData: const FlTitlesData(
-          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots:
-                _getMonthlySpots(), // Changed from _getFilteredLineChartSpots to _getMonthlySpots
-            isCurved: true,
-            color: _getLineColor(),
-            barWidth: 2,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: _getLineColor().withOpacity(0.1),
-              cutOffY: 0,
-              applyCutOffY: true,
-            ),
-          ),
-        ],
-        minX: 0,
-        maxX: (monthsToShow - 1).toDouble(),
-        minY: 0,
-      ),
-    );
-  }
-
-  Widget _buildSimplePieChart() {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: PieChart(
-          PieChartData(
-            sections: _getPieChartSections(),
-            sectionsSpace: 2,
-            centerSpaceRadius: 30,
-            startDegreeOffset: -90,
-          ),
-        ),
-      ),
-    );
   }
 }

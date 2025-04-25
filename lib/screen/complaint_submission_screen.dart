@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -154,11 +154,7 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
   Future<void> _submitComplaint() async {
     try {
       // Get appropriate base URL
-      final baseUrl = kIsWeb
-          ? 'http://localhost:3000'
-          : Platform.isAndroid
-              ? 'http://10.0.2.2:3000'
-              : 'http://localhost:3000';
+      const String baseUrl = "http://192.168.1.100:3000";
 
       final response = await http
           .post(

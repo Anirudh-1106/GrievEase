@@ -10,7 +10,7 @@ app.use(express.json());
 
 // Add test route
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' });
+  res.json({ message: `Server is running at ${baseUrl}` });
 });
 
 // Add error handling middleware
@@ -21,6 +21,14 @@ app.use((err, req, res, next) => {
 
 // Updated connection string with database name
 const connectionString = 'mongodb+srv://anirudhmnair2005:mysticace@cluster0.za78g.mongodb.net/GrievanceDB?retryWrites=true&w=majority';
+
+// Update base URL for local IP address
+const baseUrl = 'http://192.168.1.100:3000';
+
+// Use the base URL in your routes or configuration if needed
+app.get('/', (req, res) => {
+  res.json({ message: `Server is running at ${baseUrl}` });
+});
 
 mongoose.connect(connectionString, {
   useNewUrlParser: true,
@@ -794,6 +802,6 @@ app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.url} not found` });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running at http://0.0.0.0:${port}`);
 });
