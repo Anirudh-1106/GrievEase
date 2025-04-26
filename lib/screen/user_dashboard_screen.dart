@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/custom_dashboard_card.dart';
-import 'profile_page.dart'; // Import the correct ProfilePage
+
+import 'profile_page.dart';
 import 'settings_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
   List<Widget> _pages() => <Widget>[
         DashboardPage(userName: widget.userName),
-        ProfilePage(userName: widget.userName), // Use the correct ProfilePage
+        ProfilePage(userName: widget.userName),
         const SettingsPage(),
       ];
 
@@ -27,34 +27,30 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages()[_selectedIndex],
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
   Widget _buildBottomNavigationBar() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0A1832), Color(0xFF1F1C2C)], // Updated gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(50), // Perfectly curved corners
+          topRight: Radius.circular(50),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black26,
             blurRadius: 10,
-            offset: const Offset(0, -5),
+            offset: Offset(0, -5),
           ),
         ],
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(50), // Matches the container's curve
+          topRight: Radius.circular(50),
         ),
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[
@@ -72,15 +68,25 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             ),
           ],
           currentIndex: _selectedIndex,
-          selectedItemColor: Colors.deepPurple,
-          unselectedItemColor: Colors.grey,
+          selectedItemColor: const Color(0xFF00D4FF),
+          unselectedItemColor: Colors.grey.shade400,
           showUnselectedLabels: true,
           onTap: _onItemTapped,
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           type: BottomNavigationBarType.fixed,
           elevation: 0,
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBody:
+          true, // Ensures the body extends behind the bottom navigation bar
+      body: _pages()[_selectedIndex],
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 }
@@ -94,13 +100,15 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.deepPurple, Colors.indigo],
+            colors: [Color(0xFF0A1832), Color(0xFF1F1C2C)], // Updated gradient
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -110,17 +118,24 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: kToolbarHeight + 20),
               Text(
                 'Welcome, $userName!',
                 style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black26,
+                      blurRadius: 10,
+                      offset: Offset(2, 2),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
-                // ✅ Prevents overflow
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -131,43 +146,50 @@ class DashboardPage extends StatelessWidget {
                   itemBuilder: (context, index) {
                     switch (index) {
                       case 0:
-                        return CustomDashboardCard(
+                        return _buildDashboardCard(
                           icon: Icons.add_circle_outline,
                           title: 'Lodge Complaint',
-                          subtitle: '',
-                          color: Colors.blue,
+                          gradientColors: [
+                            Color(0xFF6A61D1),
+                            Color(0xFF4A47A3)
+                          ],
                           onTap: () => Navigator.pushNamed(
                             context,
                             '/submit-complaint',
-                            arguments:
-                                userName, // Passing the username to complaint screen
+                            arguments: userName,
                           ),
                         );
                       case 1:
-                        return CustomDashboardCard(
+                        return _buildDashboardCard(
                           icon: Icons.history,
                           title: 'Complaint History',
-                          subtitle: '',
-                          color: Colors.green,
+                          gradientColors: [
+                            Color(0xFF928DAB),
+                            Color(0xFF1F1C2C)
+                          ],
                           onTap: () => Navigator.pushNamed(
                               context, '/complaint-history',
                               arguments: userName),
                         );
                       case 2:
-                        return CustomDashboardCard(
+                        return _buildDashboardCard(
                           icon: Icons.track_changes,
                           title: 'Track Status',
-                          subtitle: '',
-                          color: Colors.orange,
+                          gradientColors: [
+                            Color(0xFF00D4FF),
+                            Color(0xFF0077B6)
+                          ],
                           onTap: () =>
                               Navigator.pushNamed(context, '/track-complaint'),
                         );
                       case 3:
-                        return CustomDashboardCard(
+                        return _buildDashboardCard(
                           icon: Icons.notifications,
                           title: 'Notifications',
-                          subtitle: '',
-                          color: Colors.red,
+                          gradientColors: [
+                            Color(0xFFFFA726),
+                            Color(0xFFFF7043)
+                          ],
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -187,6 +209,60 @@ class DashboardPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildDashboardCard({
+    required IconData icon,
+    required String title,
+    required List<Color> gradientColors,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors.last.withOpacity(0.4),
+              offset: const Offset(0, 8),
+              blurRadius: 15,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 40,
+              color: Colors.white,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(2, 2),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class SettingsPage extends StatelessWidget {
@@ -194,7 +270,6 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the userName from the nearest UserDashboardScreen ancestor
     final dashboardScreen =
         context.findAncestorWidgetOfExactType<UserDashboardScreen>();
     return SettingsScreen(userName: dashboardScreen?.userName ?? 'User');

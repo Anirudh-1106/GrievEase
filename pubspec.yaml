@@ -28,6 +28,14 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: "^0.14.3"
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo3.png"
+  adaptive_icon_background: "#000000" # Set background color to black to match the screenshot
+  adaptive_icon_foreground: "assets/logo3.png" # Use the same image for the foreground
 
 flutter:
   uses-material-design: true
