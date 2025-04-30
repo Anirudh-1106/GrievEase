@@ -21,7 +21,7 @@ class _UserSignupScreenState extends State<UserSignupScreen> {
 
   Future<void> _signup() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://172.20.10.9:3000";
 
       final response = await http
           .post(

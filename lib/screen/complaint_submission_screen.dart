@@ -154,7 +154,7 @@ class _ComplaintSubmissionScreenState extends State<ComplaintSubmissionScreen> {
   Future<void> _submitComplaint() async {
     try {
       // Get appropriate base URL
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final response = await http
           .post(

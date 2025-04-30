@@ -30,7 +30,7 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
 
   Future<void> _fetchComplaints() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final queryParams = {
         'status': _selectedStatus != 'All' ? _selectedStatus : '',
@@ -77,7 +77,7 @@ class _ComplaintManagementScreenState extends State<ComplaintManagementScreen> {
   Future<void> _updateComplaintStatus(
       String complaintId, String newStatus, String comment) async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final response = await http
           .post(

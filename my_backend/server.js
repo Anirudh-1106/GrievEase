@@ -23,7 +23,7 @@ app.use((err, req, res, next) => {
 const connectionString = 'mongodb+srv://anirudhmnair2005:mysticace@cluster0.za78g.mongodb.net/GrievanceDB?retryWrites=true&w=majority';
 
 // Update base URL for local IP address
-const baseUrl = 'http://192.168.1.100:3000';
+const baseUrl = "http://192.168.184.119:3000";
 
 // Use the base URL in your routes or configuration if needed
 app.get('/', (req, res) => {

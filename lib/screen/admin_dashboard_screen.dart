@@ -27,9 +27,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   String? _error;
   List<Map<String, dynamic>> _filteredData = [];
 
-  String _selectedStatus = 'All';
-  String _selectedCategory = 'All';
-  String _selectedMonth = 'All';
+  final String _selectedStatus = 'All';
+  final String _selectedCategory = 'All';
+  final String _selectedMonth = 'All';
   final int _selectedYear = DateTime.now().year;
 
   static const List<String> _statusFilters = [
@@ -62,7 +62,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _fetchDashboardData() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/admin/dashboard'),
@@ -663,15 +663,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               ),
                             ),
                           )
-                        : Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 32.0),
+                        : const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 32.0),
                             child: Center(
                               child: Column(
                                 children: [
                                   Icon(Icons.info_outline,
                                       color: Colors.grey, size: 48),
-                                  const SizedBox(height: 8),
-                                  const Text(
+                                  SizedBox(height: 8),
+                                  Text(
                                     'No Data',
                                     style: TextStyle(
                                         fontSize: 18, color: Colors.grey),

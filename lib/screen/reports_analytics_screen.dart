@@ -71,7 +71,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
     });
 
     try {
-      const String baseUrl = "http://192.168.1.100:3000"; // Updated base URL
+      const String baseUrl = "http://192.168.184.119:3000"; // Updated base URL
 
       // Adjust dates to include full days
       final startDate =
@@ -420,8 +420,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                   reservedSize: 32,
                   interval: 1,
                   getTitlesWidget: (value, meta) {
-                    if (value < 0 || value > daysBetween)
+                    if (value < 0 || value > daysBetween) {
                       return const SizedBox.shrink();
+                    }
                     final date = _startDate!.add(Duration(days: value.toInt()));
                     return SideTitleWidget(
                       meta: meta,
@@ -461,8 +462,8 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> {
                 spots: spots,
                 isCurved: true,
                 curveSmoothness: 0.05, // Reduce overshooting
-                gradient: LinearGradient(
-                  colors: [const Color(0xFF4A47A3), const Color(0xFF6A61D1)],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4A47A3), Color(0xFF6A61D1)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

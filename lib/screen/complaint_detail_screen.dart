@@ -14,7 +14,7 @@ class ComplaintDetailScreen extends StatefulWidget {
 class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   Future<void> _reopenComplaint() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final response = await http.post(
         Uri.parse(

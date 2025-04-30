@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchUserData() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://192.168.184.119:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/user/${widget.userName}'),
@@ -53,7 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchComplaintCount() async {
     try {
-      const String baseUrl = "http://192.168.1.100:3000";
+      const String baseUrl = "http://172.20.10.9:3000";
 
       final response = await http.get(
         Uri.parse('$baseUrl/complaints/count/${widget.userName}'),
@@ -290,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 setState(() => isLoading = true);
                                 try {
                                   const String baseUrl =
-                                      "http://192.168.1.100:3000";
+                                      "http://172.20.10.9:3000";
 
                                   final response = await http.post(
                                     Uri.parse('$baseUrl/user/change-password'),
